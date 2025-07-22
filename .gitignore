@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyd
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+env/
+venv/
+.mamba/
+.micromamba/
+*.egg-info/
+
+# Micromamba environment files
+environment.yml  # Optional: Include if you manage env separately
+conda-lock.yml
+
+# FAISS index (local cache)
+faiss_index/
+
+# Streamlit
+.streamlit/
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# IDE files
+.idea/
+
+# Logs
+*.log
+
+# Build artifacts
+build/
+dist/
+
+# Temporary files
+*.tmp
+*.bak
