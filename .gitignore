@@ -43,4 +43,4 @@ dist/
 *.tmp
 *.bak
 
-faiss_index
+secrets.toml
