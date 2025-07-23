@@ -17,9 +17,6 @@ venv/
 environment.yml  # Optional: Include if you manage env separately
 conda-lock.yml
 
-# FAISS index (local cache)
-faiss_index/
-
 # Streamlit
 .streamlit/
 
