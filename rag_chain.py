@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-from dotenv import load_dotenv
 from typing import Optional
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -9,15 +8,15 @@ from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from openai import OpenAI as OpenAIClient
 import torch
+import streamlit as st  # Added for st.secrets
 
-load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 
 class GrokRagChain:
     def __init__(self, docs_folder: str = "data/documents", model: str = None,
                  expansion_temp: float = None, response_temp: float = None, max_tokens: int = None):
-        device = 'cpu'  # Force CPU to avoid MPS issues with SentenceTransformers
+        device = 'cpu'  # Force CPU
         self.embeddings = HuggingFaceEmbeddings(
             model_name="BAAI/bge-large-en-v1.5",
             model_kwargs={'device': device}
@@ -55,9 +54,9 @@ class GrokRagChain:
         return vectorstore
 
     def _setup_grok_client(self):
-        api_key = os.getenv("XAI_API_KEY")
+        api_key = st.secrets.get("XAI_API_KEY", os.getenv("XAI_API_KEY"))  # Use st.secrets for deployment
         if not api_key:
-            raise ValueError("XAI_API_KEY not set in .env")
+            raise ValueError("XAI_API_KEY not set")
         return OpenAIClient(
             api_key=api_key,
             base_url="https://api.x.ai/v1"
