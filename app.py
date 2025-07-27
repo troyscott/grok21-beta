@@ -8,34 +8,48 @@ st.set_page_config(
     layout="centered"
 )
 
-# Simple strategy lookup (inline for now)
-def get_action(hand_type, player_total, dealer_upcard):
-    """Simple basic strategy lookup"""
-    if hand_type == "pair":
-        if player_total == 16:  # 8s
-            return "P"
-        elif player_total == 2:  # Aces
-            return "P"
-        elif player_total >= 12:  # 6s and up
-            return "S"
-        else:
-            return "H"
-    elif hand_type == "soft":
-        if player_total >= 19:
-            return "S"
-        elif player_total <= 17:
-            return "H"
-        else:
-            return "S"
-    else:  # hard
-        if player_total >= 17:
-            return "S"
-        elif player_total <= 11:
-            return "H"
-        elif dealer_upcard <= 6:
-            return "S"
-        else:
-            return "H"
+# Import from strategy_table.py
+try:
+    from strategy_table import get_action, get_action_text
+except ImportError:
+    # Fallback if strategy_table.py isn't available
+    def get_action(hand_type, player_total, dealer_upcard):
+        """Simple basic strategy lookup"""
+        if hand_type == "pair":
+            if player_total == 16:  # 8s
+                return "P"
+            elif player_total == 2:  # Aces
+                return "P"
+            elif player_total >= 12:  # 6s and up
+                return "S"
+            else:
+                return "H"
+        elif hand_type == "soft":
+            if player_total >= 19:
+                return "S"
+            elif player_total <= 17:
+                return "H"
+            else:
+                return "S"
+        else:  # hard
+            if player_total >= 17:
+                return "S"
+            elif player_total <= 11:
+                return "H"
+            elif dealer_upcard <= 6:
+                return "S"
+            else:
+                return "H"
+
+    def get_action_text(action_code):
+        """Convert action code to readable text"""
+        actions = {
+            'H': 'HIT',
+            'S': 'STAND', 
+            'D': 'DOUBLE DOWN',
+            'P': 'SPLIT'
+        }
+        return actions.get(action_code, 'HIT')
 
 def get_action_display(action_code):
     """Convert action code to display with icon and color"""
@@ -43,6 +57,7 @@ def get_action_display(action_code):
         'H': {'text': 'HIT', 'icon': '👊', 'color': '#ff4444', 'bg': '#ffe6e6'},
         'S': {'text': 'STAND', 'icon': '✋', 'color': '#4CAF50', 'bg': '#e8f5e0'},
         'D': {'text': 'DOUBLE DOWN', 'icon': '⬆️', 'color': '#2196F3', 'bg': '#e3f2fd'},
+        'Ds': {'text': 'DOUBLE OR STAND', 'icon': '⬆️', 'color': '#2196F3', 'bg': '#e3f2fd'},
         'P': {'text': 'SPLIT', 'icon': '✂️', 'color': '#FF9800', 'bg': '#fff3e0'}
     }
     return actions.get(action_code, actions['H'])
