@@ -1,0 +1,64 @@
+Basic Strategy for Blackjack: A Thorough Explanation
+
+Introduction to Blackjack
+Blackjack is a casino card game where players aim to beat the dealer by getting a hand total closer to 21 without exceeding it. Cards 2-10 are worth face value, face cards (J, Q, K) are 10, and Aces are 1 or 11 (player's choice). The game uses 4-8 decks in most casinos, shuffled together. Players start with two cards; the dealer has one upcard visible. Options include Hit (take another card), Stand (keep current total), Double (double bet and take one more card), Split (if pair, split into two hands), or Surrender (forfeit half bet—in some games).
+
+The house edge comes from the dealer acting last—if both bust (over 21), player loses. Basic Strategy minimizes this edge to ~0.5% by dictating optimal plays based on math and simulations of billions of hands.
+
+What is Basic Strategy?
+Basic Strategy is a set of rules telling you the best action for every possible hand vs. the dealer's upcard. It's not guessing—it's probability-based, developed via computer simulations. For our rules (4-8 decks, dealer stands on soft 17, double after split allowed, no surrender), it assumes:
+- Blackjack pays 3:2.
+- You can double on any two cards.
+- Split pairs up to 3-4 times (varies by casino).
+- Dealer stands on soft 17 (A+6=17).
+
+Following it perfectly reduces losses over time, but variance (luck) still applies. It's the foundation for advanced play like card counting.
+
+How Basic Strategy Works
+Decisions depend on your hand type:
+1. Hard Hands: No Ace (or Ace as 1). Totals 4-21.
+2. Soft Hands: Ace counted as 11 (e.g., A-7=18). Can "bust" to hard if hit.
+3. Pairs: Two same-value cards, option to split.
+
+Always check pairs first, then soft, then hard. Actions maximize expected value (EV)—long-term profit per dollar bet.
+
+Hard Hands Explanation
+These are riskier as no flexible Ace. Key principles:
+- Low totals (8 or less): Always hit—can't bust, high chance to improve.
+- 9-11: Double when dealer weak (2-6), as they bust ~40-42% of time.
+- 12-16: Stand vs. weak dealer (2-6), hit vs. strong (7-A) to avoid busting while dealer likely makes 17+.
+- 17+: Always stand—bust risk too high.
+
+Example: Hard 16 vs. 10—Hit, despite bust risk, because standing loses more often (dealer often has 20).
+
+Soft Hands Explanation
+Aces give flexibility (revert to hard if bust). Key:
+- Low soft (13-17): Double vs. 4-6 (dealer bust-prone), hit otherwise to improve without bust risk.
+- Soft 18: Double vs. 2-6, stand vs. 7-8, hit vs. 9-A (dealer strong, need to push to 19+).
+- Soft 19+: Stand—already strong.
+
+Example: Soft 18 (A7) vs. 6—Double, as dealer busts ~42%, and you can improve safely.
+
+Pairs Explanation
+Splitting creates two hands, potentially doubling wins, but costs extra bet. Key:
+- Always split Aces (strong potential Blackjacks) and 8s (weak 16 becomes two 18s).
+- Never split 10s (strong 20) or 5s (treat as 10, double).
+- Split low pairs vs. weak dealer to exploit busts.
+
+Example: 8-8 vs. 10—Split, turning bad 16 into two chances at better hands.
+
+Why Basic Strategy Reduces the House Edge
+Without strategy, house edge is ~2-4% (random play). Basic Strategy uses EV calculations—e.g., hitting 16 vs. 10 has EV of -0.54 (lose 54 cents per $1 long-term), better than standing's -0.74. Over millions of hands, this saves money. Variations (e.g., dealer hits soft 17) change charts slightly—increase edge by ~0.2%.
+
+Common Variations and Tips
+- If dealer hits soft 17 (H17): More aggressive hits/doubles (e.g., double 11 vs. A).
+- Single deck: Slightly different (e.g., double 9 vs. 2).
+- Practice: Use apps or free online trainers. Memorize charts via mnemonics (e.g., "Stand on 12-16 vs. low cards").
+- Bankroll: Bet 1-2% per hand to survive variance.
+- Don't deviate based on "hunches"—math wins long-term.
+
+For full charts, see sources like Wizard of Odds or Blackjack Apprenticeship. Remember, Basic Strategy is legal and encouraged for fair play, but casinos may shuffle more if you win consistently.
+
+References:
+- Wizard of Odds: Comprehensive simulations.
+- Blackjack Apprenticeship: Training tools.
