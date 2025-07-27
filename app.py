@@ -3,7 +3,7 @@ from rag_chain import GrokRagChain
 
 # Page configuration
 st.set_page_config(
-    page_title="Grok21",
+    page_title="Grok21 - Beta",
     page_icon="🃏",
     layout="centered"
 )
