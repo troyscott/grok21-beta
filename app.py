@@ -89,7 +89,7 @@ def get_hand_cards(total, hand_type):
             first, second = 10, total - 10
         return [display_card(first, "♠"), display_card(second, "♣")]
 
-# Dark theme styling
+# Dark theme styling with ANIMATIONS!
 st.markdown("""
 <style>
 /* Dark theme globals */
@@ -126,6 +126,7 @@ h1, h2, h3 {
     font-size: 16px;
     margin: 8px 0;
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
 }
 
 .stButton > button:hover {
@@ -174,7 +175,7 @@ h1, h2, h3 {
     color: #fafafa;
 }
 
-/* Action result */
+/* ANIMATED ACTION RESULT! */
 .action-result {
     border-radius: 12px;
     padding: 2rem;
@@ -184,9 +185,132 @@ h1, h2, h3 {
     margin: 1rem 0;
     border: 2px solid;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    
+    /* Entry Animation */
+    animation: actionEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
 }
 
-/* BIGGER TABS - This is the key fix! */
+/* Action entry animation */
+@keyframes actionEntry {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(30px);
+        box-shadow: 0 0 0 rgba(0,0,0,0);
+    }
+    50% {
+        transform: scale(1.05) translateY(-5px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+}
+
+/* Animated icon */
+.action-icon {
+    animation: iconBounce 0.8s ease-out 0.3s;
+    display: inline-block;
+}
+
+@keyframes iconBounce {
+    0% { transform: scale(0.3) rotate(-10deg); }
+    50% { transform: scale(1.2) rotate(5deg); }
+    70% { transform: scale(0.9) rotate(-2deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Pulsing glow effect */
+.action-result::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: inherit;
+    border-radius: 12px;
+    z-index: -1;
+    animation: pulseGlow 2s ease-in-out infinite;
+    opacity: 0.7;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% { 
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+/* Action text slide-in */
+.action-text {
+    animation: textSlide 0.5s ease-out 0.4s both;
+}
+
+@keyframes textSlide {
+    0% {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Special animations for different actions */
+.hit-action {
+    animation: actionEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+               hitShake 0.5s ease-in-out 0.8s;
+}
+
+@keyframes hitShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+.stand-action {
+    animation: actionEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+               standSolid 0.4s ease-out 0.8s;
+}
+
+@keyframes standSolid {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.double-action {
+    animation: actionEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+               doubleUp 0.6s ease-out 0.8s;
+}
+
+@keyframes doubleUp {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0); }
+}
+
+.split-action {
+    animation: actionEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+               splitMove 0.8s ease-out 0.8s;
+}
+
+@keyframes splitMove {
+    0% { transform: scaleX(1); }
+    25% { transform: scaleX(0.95); }
+    50% { transform: scaleX(1.1); }
+    100% { transform: scaleX(1); }
+}
+
+/* BIGGER TABS */
 .stTabs [data-baseweb="tab-list"] {
     background: #2a2a2a;
     border-radius: 10px;
@@ -349,14 +473,6 @@ with tab1:
     with col3:
         hand_type = st.selectbox("Type", ["hard", "soft", "pair"])
     
-    # Hand type hint based on selection
-    if hand_type == "hard":
-        st.info("💡 **Hard Hand**: No usable Ace (A+6+5=12, not 22)")
-    elif hand_type == "soft":
-        st.info("💡 **Soft Hand**: Ace counts as 11 (A+6=17)")
-    else:
-        st.info("💡 **Pair**: Two identical cards (8+8, A+A)")
-    
     # Card display using Streamlit containers
     with st.container():
         st.markdown('<div class="card-display">', unsafe_allow_html=True)
@@ -385,17 +501,20 @@ with tab1:
             action_code = get_action(hand_type, player_total, dealer_upcard)
             action_info = get_action_display(action_code)
             
-            # Display result with custom styling and icon
+            # Get action-specific CSS class
+            action_class = f"{action_code.lower()}-action" if action_code in ['H', 'S', 'D', 'P'] else "action-result"
+            
+            # Display result with ANIMATED styling and icon
             st.markdown(f"""
-            <div class="action-result" style="
+            <div class="action-result {action_class}" style="
                 color: {action_info['color']}; 
                 background-color: {action_info['bg']};
                 border-color: {action_info['color']};
             ">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
+                <div class="action-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">
                     {action_info['icon']}
                 </div>
-                <div>
+                <div class="action-text">
                     {action_info['text']}
                 </div>
             </div>
