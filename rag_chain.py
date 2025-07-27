@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Optional
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import Chroma  # Changed from FAISS to Chroma
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from openai import OpenAI as OpenAIClient
@@ -30,15 +30,8 @@ class GrokRagChain:
         self.max_tokens = int(max_tokens or st.secrets.get("MAX_TOKENS", os.getenv("MAX_TOKENS", "500")))
 
     def _load_or_create_vectorstore(self, docs_folder: str):
-        index_path = "faiss_index"
+        persist_directory = "chroma_db"  # Changed from faiss_index to chroma_db
         
-        # Try to load existing index
-        if os.path.exists(index_path):
-            try:
-                return FAISS.load_local(index_path, self.embeddings, allow_dangerous_deserialization=True)
-            except Exception as e:
-                logging.warning(f"Failed to load existing FAISS index: {e}. Creating new one.")
-
         # Create new index
         if not os.path.exists(docs_folder):
             st.error(f"Documents folder '{docs_folder}' not found. Please ensure it exists with PDF/TXT files.")
@@ -63,13 +56,12 @@ class GrokRagChain:
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
         chunks = splitter.split_documents(docs)
 
-        vectorstore = FAISS.from_documents(chunks, self.embeddings)
-        
-        # Try to save index (may fail in read-only environments)
-        try:
-            vectorstore.save_local(index_path)
-        except Exception as e:
-            logging.warning(f"Could not save FAISS index: {e}. Index will be recreated on next run.")
+        # Use Chroma instead of FAISS
+        vectorstore = Chroma.from_documents(
+            chunks, 
+            self.embeddings,
+            persist_directory=persist_directory
+        )
         
         return vectorstore
 
@@ -92,10 +84,10 @@ class GrokRagChain:
         # Validate input parameters
         if hand_type is not None and hand_type.lower() not in ["hard", "soft", "pair"]:
             return f"Invalid hand type: {hand_type}. Must be 'hard', 'soft', or 'pair'."
-            
+        
         if player_value is not None and (player_value < 2 or player_value > 21):
             return f"Invalid player value: {player_value}. Must be between 2 and 21."
-            
+        
         if dealer_upcard is not None and dealer_upcard not in range(2, 12):
             return f"Invalid dealer upcard: {dealer_upcard}. Must be between 2 and 11 (where 11 represents Ace)."
 
@@ -106,7 +98,25 @@ class GrokRagChain:
         # Fast path: Use heuristic table for hand lookups
         if player_value is not None and dealer_upcard is not None:
             try:
-                action = get_action(hand_type or "hard", player_value, dealer_upcard)
+                # For pairs, convert total to individual card value
+                if hand_type and hand_type.lower() == "pair":
+                    # Convert pair total to individual card value
+                    if player_value % 2 != 0 and player_value != 21:  # Odd totals except 21 (A-A)
+                        return f"Invalid pair total: {player_value}. Pair totals must be even (except A-A = 21)."
+                    
+                    if player_value == 21:  # A-A pair
+                        pair_value = 11
+                    else:
+                        pair_value = player_value // 2
+                    
+                    # Validate pair value range
+                    if pair_value < 2 or pair_value > 11:
+                        return f"Invalid pair: {player_value}. Valid pairs: 4(2-2), 6(3-3), 8(4-4), 10(5-5), 12(6-6), 14(7-7), 16(8-8), 18(9-9), 20(10-10), 21(A-A)."
+                    
+                    action = get_action(hand_type, pair_value, dealer_upcard)
+                else:
+                    action = get_action(hand_type or "hard", player_value, dealer_upcard)
+                
                 explanations = {
                     'H': 'Hit: Improves EV against the dealer\'s likely strong hand.',
                     'S': 'Stand: Avoids bust risk with a strong enough total.',
