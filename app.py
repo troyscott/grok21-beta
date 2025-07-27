@@ -77,14 +77,25 @@ def display_card(value, suit="♠"):
 def get_hand_cards(total, hand_type):
     """Get cards for display based on hand type"""
     if hand_type == "pair":
-        value = total // 2
-        return [display_card(value, "♠"), display_card(value, "♣")]
+        # For pairs, the total represents two identical cards
+        # So the individual card value is total ÷ 2
+        card_value = total // 2
+        if card_value < 2 or card_value > 11:
+            # Invalid pair - fallback to hard hand display
+            if total <= 11:
+                first, second = max(2, total - 2), 2
+            else:
+                first, second = 10, total - 10
+            return [display_card(first, "♠"), display_card(second, "♣")]
+        return [display_card(card_value, "♠"), display_card(card_value, "♣")]
     elif hand_type == "soft":
         other_value = total - 11
+        if other_value < 1:
+            other_value = 1
         return [display_card(11, "♥"), display_card(other_value, "♠")]
     else:  # hard
         if total <= 11:
-            first, second = total - 2, 2
+            first, second = max(2, total - 2), 2
         else:
             first, second = 10, total - 10
         return [display_card(first, "♠"), display_card(second, "♣")]
