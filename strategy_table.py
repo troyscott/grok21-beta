@@ -46,12 +46,83 @@ pairs_table = {
     11: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'P', 9: 'P', 10: 'P', 11: 'P'}  # A-A
 }
 
+def get_action_text(action_code: str) -> str:
+    """Convert action codes to simple, obvious words"""
+    action_map = {
+        'H': 'Hit',
+        'S': 'Pass',
+        'D': 'Double',
+        'Ds': 'Double or Pass',
+        'P': 'Split'
+    }
+    return action_map.get(action_code, action_code)
+
 def get_action(hand_type: str, player_value: int, dealer_upcard: int) -> str:
+    """
+    Get the optimal blackjack action based on hand type, player value, and dealer upcard.
+    
+    Args:
+        hand_type: Type of hand - "hard", "soft", or "pair"
+        player_value: Player's hand total (2-21)
+        dealer_upcard: Dealer's visible card (2-11, where 11 represents Ace)
+        
+    Returns:
+        Action code: 'H' (Hit), 'S' (Stand), 'D' (Double), 'Ds' (Double if allowed, else Stand), 'P' (Split)
+        
+    Raises:
+        ValueError: If inputs are invalid or out of range
+    """
+    # Validate inputs
+    if not isinstance(hand_type, str):
+        raise ValueError(f"Hand type must be a string, got {type(hand_type).__name__}")
+    
+    if not isinstance(player_value, int):
+        raise ValueError(f"Player value must be an integer, got {type(player_value).__name__}")
+    
+    if not isinstance(dealer_upcard, int):
+        raise ValueError(f"Dealer upcard must be an integer, got {type(dealer_upcard).__name__}")
+    
+    # Normalize hand_type to lowercase
+    hand_type_lower = hand_type.lower()
+    
+    # Validate hand_type
+    if hand_type_lower not in ['hard', 'soft', 'pair']:
+        raise ValueError(f"Invalid hand type: {hand_type}. Must be 'hard', 'soft', or 'pair'")
+    
+    # Validate player_value range based on hand type
+    if hand_type_lower == 'hard':
+        if player_value < 5 or player_value > 21:
+            raise ValueError(f"Invalid hard hand value: {player_value}. Must be between 5 and 21")
+    elif hand_type_lower == 'soft':
+        if player_value < 13 or player_value > 20:
+            raise ValueError(f"Invalid soft hand value: {player_value}. Must be between 13 and 20")
+    elif hand_type_lower == 'pair':
+        if player_value < 2 or player_value > 11:
+            raise ValueError(f"Invalid pair value: {player_value}. Must be between 2 and 11")
+    
+    # Validate dealer_upcard
+    if dealer_upcard < 2 or dealer_upcard > 11:
+        raise ValueError(f"Invalid dealer upcard: {dealer_upcard}. Must be between 2 and 11")
+    
+    # Get the appropriate table
     table = {
         'hard': hard_table,
         'soft': soft_table,
         'pair': pairs_table
-    }.get(hand_type.lower(), hard_table)  # Default to hard
+    }.get(hand_type_lower)
+    
+    # Handle edge cases with special rules
+    if hand_type_lower == 'hard' and player_value < 5:
+        return 'H'  # Always hit very low hands
+    
+    if hand_type_lower == 'hard' and player_value > 21:
+        return 'BUST'  # Bust
+    
+    # Get actions from table
     actions = table.get(player_value, {})
-    dealer_key = dealer_upcard if dealer_upcard <= 10 else 11  # Ace as 11
-    return actions.get(dealer_key, 'H')  # Default hit
+    
+    # Normalize dealer upcard (Ace = 11)
+    dealer_key = dealer_upcard if dealer_upcard <= 10 else 11
+    
+    # Get action with fallback to hit
+    return actions.get(dealer_key, 'H')

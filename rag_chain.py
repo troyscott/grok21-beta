@@ -89,59 +89,121 @@ class GrokRagChain:
                      dealer_upcard: Optional[int] = None) -> str:
         from strategy_table import get_action
 
-        # Fast path: Use heuristic table for hand lookups
-        if player_value is not None and dealer_upcard is not None:
-            action = get_action(hand_type or "hard", player_value, dealer_upcard)
-            explanations = {
-                'H': 'Hit: Improves EV against the dealer\'s likely strong hand.',
-                'S': 'Stand: Avoids bust risk with a strong enough total.',
-                'D': 'Double: Maximizes profit when the dealer is weak (2-6).',
-                'Ds': 'Double if allowed, else Stand: Optimizes EV with caution.',
-                'P': 'Split: Creates two hands for better win potential.'
-            }
-            return f"Optimal Basic Strategy action: {action}. {explanations.get(action, 'Action based on optimal play.')}"
+        # Validate input parameters
+        if hand_type is not None and hand_type.lower() not in ["hard", "soft", "pair"]:
+            return f"Invalid hand type: {hand_type}. Must be 'hard', 'soft', or 'pair'."
+            
+        if player_value is not None and (player_value < 2 or player_value > 21):
+            return f"Invalid player value: {player_value}. Must be between 2 and 21."
+            
+        if dealer_upcard is not None and dealer_upcard not in range(2, 12):
+            return f"Invalid dealer upcard: {dealer_upcard}. Must be between 2 and 11 (where 11 represents Ace)."
 
         # RAG path: Use Grok for chat queries
-        if not query.strip():
+        if not query.strip() and (player_value is None or dealer_upcard is None):
             return "Please provide a question about blackjack strategy."
-            
-        try:
-            expansion_prompt = f"Expand this Blackjack query into 2-3 related sub-queries for better retrieval. Output as JSON list: [\"subquery1\", \"subquery2\", \"subquery3\"]: {query}"
-            expansion_response = self.grok_client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": expansion_prompt}],
-                temperature=self.expansion_temp
-            ).choices[0].message.content
-            
+
+        # Fast path: Use heuristic table for hand lookups
+        if player_value is not None and dealer_upcard is not None:
             try:
-                expanded_queries = json.loads(expansion_response)
-            except json.JSONDecodeError:
-                logging.warning("Failed to parse expansion response; using original query.")
-                expanded_queries = [query]
-            
-            logging.info(f"Expanded queries: {expanded_queries}")
-
-            contexts = set()
-            for eq in expanded_queries:
+                action = get_action(hand_type or "hard", player_value, dealer_upcard)
+                explanations = {
+                    'H': 'Hit: Improves EV against the dealer\'s likely strong hand.',
+                    'S': 'Stand: Avoids bust risk with a strong enough total.',
+                    'D': 'Double: Maximizes profit when the dealer is weak (2-6).',
+                    'Ds': 'Double if allowed, else Stand: Optimizes EV with caution.',
+                    'P': 'Split: Creates two hands for better win potential.'
+                }
+                return f"Optimal Basic Strategy action: {action}. {explanations.get(action, 'Action based on optimal play.')}"
+            except Exception as e:
+                logging.error(f"Error in strategy lookup: {e}")
+                return f"Error finding strategy: {str(e)}. Please check your input values and try again."
+        
+        # Maximum retries for API calls
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                # Step 1: Query expansion
                 try:
-                    results = self.vectorstore.similarity_search(eq, k=2)
-                    contexts.update(doc.page_content for doc in results)
+                    expansion_prompt = f"Expand this Blackjack query into 2-3 related sub-queries for better retrieval. Output as JSON list: [\"subquery1\", \"subquery2\", \"subquery3\"]: {query}"
+                    expansion_response = self.grok_client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": expansion_prompt}],
+                        temperature=self.expansion_temp
+                    ).choices[0].message.content
+                    
+                    expanded_queries = json.loads(expansion_response)
+                    if not isinstance(expanded_queries, list) or not expanded_queries:
+                        raise ValueError("Invalid expansion format")
+                        
+                except json.JSONDecodeError:
+                    logging.warning("Failed to parse expansion response; using original query.")
+                    expanded_queries = [query]
+                except ValueError as e:
+                    logging.warning(f"Invalid expansion format: {e}; using original query.")
+                    expanded_queries = [query]
                 except Exception as e:
-                    logging.warning(f"Search failed for query '{eq}': {e}")
+                    logging.warning(f"Query expansion failed: {e}; using original query.")
+                    expanded_queries = [query]
+                
+                logging.info(f"Expanded queries: {expanded_queries}")
 
-            full_context = '\n\n'.join(contexts)
-            if len(full_context) > 10000:
-                full_context = full_context[:10000] + '...'
-            
-            full_prompt = f"Context: {full_context}\n\nQuery: {query}\nAnswer as Grok with clear reasoning:"
-            response = self.grok_client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": full_prompt}],
-                temperature=self.response_temp,
-                max_tokens=self.max_tokens
-            ).choices[0].message.content
-            return response
+                # Step 2: Context retrieval
+                contexts = set()
+                retrieval_failures = 0
+                
+                for eq in expanded_queries:
+                    try:
+                        results = self.vectorstore.similarity_search(eq, k=2)
+                        if results:
+                            contexts.update(doc.page_content for doc in results)
+                        else:
+                            logging.warning(f"No results found for query: {eq}")
+                    except Exception as e:
+                        logging.warning(f"Search failed for query '{eq}': {e}")
+                        retrieval_failures += 1
+                
+                # If all retrievals failed, provide a fallback
+                if retrieval_failures == len(expanded_queries):
+                    logging.error("All context retrievals failed")
+                    return "I'm having trouble accessing my knowledge base right now. Please try a different question or try again later."
+                
+                # If we have no context but some retrievals succeeded, the query might be unrelated to blackjack
+                if not contexts:
+                    return "I couldn't find relevant information about that. Please ask a question related to blackjack strategy."
 
-        except Exception as e:
-            logging.error(f"Error in get_response: {e}")
-            return f"An error occurred: {str(e)}. Please check your API key and try again."
+                full_context = '\n\n'.join(contexts)
+                if len(full_context) > 10000:
+                    full_context = full_context[:10000] + '...'
+                
+                # Step 3: Generate response
+                full_prompt = f"Context: {full_context}\n\nQuery: {query}\nAnswer as Grok with clear reasoning:"
+                response = self.grok_client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": full_prompt}],
+                    temperature=self.response_temp,
+                    max_tokens=self.max_tokens
+                ).choices[0].message.content
+                
+                return response
+
+            except (ConnectionError, TimeoutError) as e:
+                # Network-related errors - retry
+                retry_count += 1
+                logging.warning(f"Network error (attempt {retry_count}/{max_retries}): {e}")
+                if retry_count >= max_retries:
+                    return "I'm having trouble connecting to my knowledge service. Please check your internet connection and try again later."
+                
+            except Exception as e:
+                # For other errors, log and return a user-friendly message
+                error_type = type(e).__name__
+                logging.error(f"Error in get_response ({error_type}): {e}")
+                
+                if "API key" in str(e) or "authentication" in str(e).lower():
+                    return "Authentication error. Please check your API key configuration."
+                elif "rate limit" in str(e).lower() or "quota" in str(e).lower():
+                    return "I've reached my usage limit. Please try again in a few minutes."
+                else:
+                    return f"An unexpected error occurred. Please try a different question or try again later. Error type: {error_type}"

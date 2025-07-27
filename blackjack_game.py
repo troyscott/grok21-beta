@@ -4,6 +4,7 @@ Uses fast heuristic tables + RAG/Grok for learning
 """
 
 from rag_chain import GrokRagChain
+from strategy_table import get_action
 
 def get_strategy_advice(player_total, dealer_upcard, hand_type="hard"):
     """
@@ -22,20 +23,19 @@ def get_strategy_advice(player_total, dealer_upcard, hand_type="hard"):
     dealer_key = 11 if dealer_upcard == 1 else dealer_upcard
     
     try:
-        # Initialize RAG chain - this handles both:
-        # 1. Fast heuristic table lookup (when player_value + dealer_upcard provided)  
-        # 2. RAG/Grok explanations (when query provided)
-        rag_chain = GrokRagChain()
+        # Directly use the strategy table for lookups without initializing RAG chain
+        action = get_action(hand_type, player_total, dealer_key)
         
-        # Use heuristic path - empty query triggers table lookup
-        response = rag_chain.get_response(
-            query="",
-            hand_type=hand_type,
-            player_value=player_total,
-            dealer_upcard=dealer_key
-        )
+        # Explanations for each action
+        explanations = {
+            'H': 'Hit: Improves EV against the dealer\'s likely strong hand.',
+            'S': 'Stand: Avoids bust risk with a strong enough total.',
+            'D': 'Double: Maximizes profit when the dealer is weak (2-6).',
+            'Ds': 'Double if allowed, else Stand: Optimizes EV with caution.',
+            'P': 'Split: Creates two hands for better win potential.'
+        }
         
-        return response
+        return f"Optimal Basic Strategy action: {action}. {explanations.get(action, 'Action based on optimal play.')}"
         
     except Exception as e:
         return f"Error getting strategy advice: {str(e)}"
