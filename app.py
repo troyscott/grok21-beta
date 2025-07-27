@@ -1,181 +1,214 @@
 import streamlit as st
 from rag_chain import GrokRagChain
-from strategy_table import get_action, get_action_text
 
 # Page configuration
 st.set_page_config(
-    page_title="Grok21 - Blackjack Strategy Helper",
+    page_title="Grok21",
     page_icon="🃏",
     layout="centered"
 )
 
-# Modern, clean color scheme inspired by 2025 UI trends
+# Simple strategy lookup (inline for now)
+def get_action(hand_type, player_total, dealer_upcard):
+    """Simple basic strategy lookup"""
+    if hand_type == "pair":
+        if player_total == 16:  # 8s
+            return "P"
+        elif player_total == 2:  # Aces
+            return "P"
+        elif player_total >= 12:  # 6s and up
+            return "S"
+        else:
+            return "H"
+    elif hand_type == "soft":
+        if player_total >= 19:
+            return "S"
+        elif player_total <= 17:
+            return "H"
+        else:
+            return "S"
+    else:  # hard
+        if player_total >= 17:
+            return "S"
+        elif player_total <= 11:
+            return "H"
+        elif dealer_upcard <= 6:
+            return "S"
+        else:
+            return "H"
+
+def get_action_display(action_code):
+    """Convert action code to display with icon and color"""
+    actions = {
+        'H': {'text': 'HIT', 'icon': '👊', 'color': '#ff4444', 'bg': '#ffe6e6'},
+        'S': {'text': 'STAND', 'icon': '✋', 'color': '#4CAF50', 'bg': '#e8f5e0'},
+        'D': {'text': 'DOUBLE DOWN', 'icon': '⬆️', 'color': '#2196F3', 'bg': '#e3f2fd'},
+        'P': {'text': 'SPLIT', 'icon': '✂️', 'color': '#FF9800', 'bg': '#fff3e0'}
+    }
+    return actions.get(action_code, actions['H'])
+
+def display_card(value, suit="♠"):
+    """Display a single card using emoji/text"""
+    if value == 11:
+        display_value = "A"
+    else:
+        display_value = str(value)
+    
+    # Use suit emojis for better display
+    suit_emoji = {"♠": "♠️", "♥": "♥️", "♦": "♦️", "♣": "♣️"}.get(suit, suit)
+    
+    return f"{display_value}{suit_emoji}"
+
+def get_hand_cards(total, hand_type):
+    """Get cards for display based on hand type"""
+    if hand_type == "pair":
+        value = total // 2
+        return [display_card(value, "♠"), display_card(value, "♣")]
+    elif hand_type == "soft":
+        other_value = total - 11
+        return [display_card(11, "♥"), display_card(other_value, "♠")]
+    else:  # hard
+        if total <= 11:
+            first, second = total - 2, 2
+        else:
+            first, second = 10, total - 10
+        return [display_card(first, "♠"), display_card(second, "♣")]
+
+# Clean styling
 st.markdown("""
 <style>
-/* Modern neutral background with proper contrast */
 .stApp {
-    background-color: #fafafa;
+    background: #fafafa;
     color: #2d3748;
 }
 
 .main .block-container {
-    padding-top: 2rem;
-    max-width: 800px;
-    background-color: #ffffff;
+    padding: 1rem;
+    max-width: 600px;
+    background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    padding: 2rem;
-    margin-top: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 0.5rem auto;
 }
 
-/* Clean input styling with subtle borders */
-.stSelectbox > div > div, .stNumberInput > div > div > input {
-    background-color: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    color: #2d3748;
-}
-
-.stSelectbox > div > div:focus-within, .stNumberInput > div > div:focus-within {
-    border-color: #4299e1;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-}
-
-/* Modern button with gradient */
 .stButton > button {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 0.75rem 1.5rem;
+    padding: 12px;
     font-weight: 600;
     width: 100%;
-    transition: all 0.3s ease;
+    font-size: 16px;
+    margin: 8px 0;
 }
 
-.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(102, 126, 234, 0.3);
+.card-display {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    text-align: center;
 }
 
-/* Strategy result with modern card design */
+.big-cards {
+    font-size: 2rem;
+    margin: 0.5rem;
+}
+
 .action-result {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
     border-radius: 12px;
     padding: 2rem;
-    margin: 2rem 0;
     text-align: center;
     font-size: 1.5rem;
     font-weight: 700;
-    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    margin: 1rem 0;
+    border: 2px solid;
 }
 
-/* RAG response with clean styling */
-.rag-response {
-    background-color: #f7fafc;
-    border-left: 4px solid #48bb78;
-    padding: 1.5rem;
-    margin: 1.5rem 0;
-    border-radius: 8px;
-    color: #2d3748;
-    line-height: 1.6;
-}
-
-/* Tab styling */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 2rem;
-}
-
-.stTabs [data-baseweb="tab"] {
-    color: #718096;
-    font-weight: 600;
-}
-
-.stTabs [aria-selected="true"] {
-    color: #667eea;
-}
-
-/* Text area styling */
-.stTextArea textarea {
-    background-color: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    color: #2d3748;
-}
-
-.stTextArea textarea:focus {
-    border-color: #4299e1;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-}
-
-/* Headers with better contrast */
 h1, h2, h3 {
     color: #2d3748 !important;
-}
-
-.stMarkdown {
-    color: #4a5568;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize RAG chain
+# Initialize RAG
 @st.cache_resource
-def init_rag_chain():
+def init_rag():
     return GrokRagChain()
 
 try:
-    rag_chain = init_rag_chain()
+    rag_chain = init_rag()
 except Exception as e:
-    st.error(f"Error initializing RAG chain: {e}")
+    st.error(f"Error: {e}")
     st.stop()
 
-# Title
-st.title("🃏 Grok21 - Blackjack Strategy")
-st.markdown("**Simple. Fast. Optimal.**")
+# Header
+st.title("🃏 Grok21")
+st.markdown("**Simple • Fast • Optimal**")
 
-# Main tabs
-tab1, tab2 = st.tabs(["🎯 Quick Strategy", "💬 Ask Questions"])
+# Tabs
+tab1, tab2 = st.tabs(["🎯 Strategy", "💬 Learn"])
 
 with tab1:
-    st.subheader("Get Your Play")
-    
-    # Simple input form
+    # Inputs
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        player_total = st.number_input(
-            "Your Hand Total", 
-            min_value=5, 
-            max_value=21, 
-            value=12
-        )
+        player_total = st.number_input("Hand", 5, 21, 12)
     
     with col2:
         dealer_upcard = st.selectbox(
-            "Dealer Shows",
-            options=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-            index=8,
+            "Dealer", 
+            [2,3,4,5,6,7,8,9,10,11], 
+            8,
             format_func=lambda x: "A" if x == 11 else str(x)
         )
     
     with col3:
-        hand_type = st.selectbox(
-            "Hand Type",
-            options=["hard", "soft", "pair"],
-            format_func=lambda x: x.title()
-        )
+        hand_type = st.selectbox("Type", ["hard", "soft", "pair"])
     
-    # Get strategy button
+    # Card display using Streamlit containers
+    with st.container():
+        st.markdown('<div class="card-display">', unsafe_allow_html=True)
+        
+        # Display cards using columns
+        card_col1, vs_col, card_col2 = st.columns([2, 1, 2])
+        
+        with card_col1:
+            st.markdown(f"**Your Hand ({player_total})**")
+            player_cards = get_hand_cards(player_total, hand_type)
+            st.markdown(f'<div class="big-cards">{"  ".join(player_cards)}</div>', unsafe_allow_html=True)
+        
+        with vs_col:
+            st.markdown("**VS**")
+        
+        with card_col2:
+            st.markdown("**Dealer Shows**")
+            dealer_card = display_card(dealer_upcard, "♥")
+            st.markdown(f'<div class="big-cards">{dealer_card}</div>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Strategy button
     if st.button("Get Strategy", type="primary"):
         try:
             action_code = get_action(hand_type, player_total, dealer_upcard)
-            action_text = get_action_text(action_code)
+            action_info = get_action_display(action_code)
             
+            # Display result with custom styling and icon
             st.markdown(f"""
-            <div class="action-result">
-                {action_text}
+            <div class="action-result" style="
+                color: {action_info['color']}; 
+                background-color: {action_info['bg']};
+                border-color: {action_info['color']};
+            ">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
+                    {action_info['icon']}
+                </div>
+                <div>
+                    {action_info['text']}
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -183,13 +216,11 @@ with tab1:
             st.error(f"Error: {e}")
 
 with tab2:
-    st.subheader("Learn Strategy")
-    
     # Question input
     question = st.text_area(
-        "Ask about blackjack strategy:",
-        placeholder="Why should I hit 16 vs dealer 10?",
-        height=100
+        "Ask about strategy:",
+        placeholder="Why hit 16 vs dealer 10?",
+        height=80
     )
     
     if st.button("Ask Grok", type="primary"):
@@ -197,28 +228,21 @@ with tab2:
             with st.spinner("Thinking..."):
                 try:
                     response = rag_chain.get_response(question)
-                    
-                    st.markdown(f"""
-                    <div class="rag-response">
-                        {response}
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
+                    st.info(response)
                 except Exception as e:
-                    st.error(f"Error getting response: {e}")
+                    st.error(f"Error: {e}")
         else:
-            st.warning("Please enter a question!")
+            st.warning("Enter a question!")
     
-    # Example questions
-    with st.expander("💡 Example Questions"):
+    # Quick examples
+    with st.expander("💡 Examples"):
         st.markdown("""
-        - Why hit 16 vs dealer 10?
-        - When should I double down?
-        - What's the difference between hard and soft hands?
-        - Why never split 10s?
-        - How does basic strategy work?
+        • Why hit 16 vs 10?  
+        • When to double down?  
+        • Hard vs soft hands?  
+        • Why split 8s?
         """)
 
 # Footer
 st.markdown("---")
-st.markdown("*Use basic strategy for optimal blackjack play*")
+st.markdown("*Optimal blackjack strategy*")
