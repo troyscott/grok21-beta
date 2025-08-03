@@ -450,8 +450,11 @@ except Exception as e:
 st.title("🃏 Grok21")
 st.markdown("**Simple • Fast • Optimal**")
 
-# Tabs
-tab1, tab2 = st.tabs(["🎯 Strategy", "💬 Learn"])
+# Import the ask_grok_question function
+from blackjack_game import ask_grok_question
+
+# In your tabs or wherever you want the Grok interface:
+tab1, tab2 = st.tabs(["Strategy Helper", "Ask Grok"])
 
 with tab1:
     # Hand type explanation
@@ -535,32 +538,29 @@ with tab1:
             st.error(f"Error: {e}")
 
 with tab2:
-    # Question input
+    st.header("🤖 Ask Grok About Blackjack Strategy")
+    st.markdown("Get detailed explanations about blackjack strategy decisions and rules.")
+    
     question = st.text_area(
-        "Ask about strategy:",
-        placeholder="Why hit 16 vs dealer 10?",
-        height=80
+        "Your question:",
+        height=100,
+        placeholder="E.g., Why should I hit on 16 against dealer's 10?",
+        help="Ask about specific hands, general strategy, or blackjack rules"
     )
     
-    if st.button("Ask Grok", type="primary"):
-        if question.strip():
-            with st.spinner("Thinking..."):
-                try:
-                    response = rag_chain.get_response(question)
-                    st.info(response)
-                except Exception as e:
-                    st.error(f"Error: {e}")
+    if st.button("🤖 Ask Grok", type="primary"):
+        if question and question.strip():
+            with st.spinner('🤖 Asking Grok... This may take a few seconds.'):
+                response = ask_grok_question(question)
+            
+            st.markdown("---")
+            st.markdown("### 🤖 Grok's Response:")
+            st.markdown(response)
+            
+            with st.expander("📝 Your Question"):
+                st.markdown(f"*{question}*")
         else:
-            st.warning("Enter a question!")
-    
-    # Quick examples
-    with st.expander("💡 Examples"):
-        st.markdown("""
-        • Why hit 16 vs 10?  
-        • When to double down?  
-        • Hard vs soft hands?  
-        • Why split 8s?
-        """)
+            st.warning("Please enter a question first.")
 
 # Footer
 st.markdown("---")
