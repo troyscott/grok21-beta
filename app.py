@@ -512,16 +512,8 @@ with tab1:
     # Strategy button
     if st.button("Get Strategy", type="primary"):
         try:
-            # Convert pair total to individual card value if needed
-            if hand_type == "pair":
-                if player_total == 22:  # Special case: A-A pair
-                    lookup_value = 11
-                else:
-                    lookup_value = player_total // 2
-            else:
-                lookup_value = player_total
-            
-            action_code = get_action(hand_type, lookup_value, dealer_upcard)
+            # No conversion needed - all hand types now use totals directly
+            action_code = get_action(hand_type, player_total, dealer_upcard)
             action_info = get_action_display(action_code)
             
             # Get action-specific CSS class

@@ -47,17 +47,17 @@ class TestStrategyTable:
     def test_pair_scenarios(self):
         """Test pair splitting scenarios"""
         test_cases = [
-            # (pair_value, dealer_upcard, expected_action)
-            (2, 7, 'P'),   # 2-2 vs 2-7
-            (8, 11, 'P'),  # 8-8 always split
-            (9, 7, 'S'),   # 9-9 vs 7, 10, A
-            (10, 5, 'S'),  # 10-10 never split
-            (11, 6, 'P'),  # A-A always split
+            # (pair_total, dealer_upcard, expected_action)
+            (4, 7, 'P'),   # 2-2 (total 4) vs 2-7
+            (16, 11, 'P'), # 8-8 (total 16) always split
+            (18, 7, 'S'),  # 9-9 (total 18) vs 7, 10, A
+            (20, 5, 'S'),  # 10-10 (total 20) never split
+            (22, 6, 'P'),  # A-A (total 22) always split
         ]
         
-        for pair_value, dealer_upcard, expected in test_cases:
-            result = get_action('pair', pair_value, dealer_upcard)
-            assert result == expected, f"Pair {pair_value}s vs {dealer_upcard}: expected {expected}, got {result}"
+        for pair_total, dealer_upcard, expected in test_cases:
+            result = get_action('pair', pair_total, dealer_upcard)
+            assert result == expected, f"Pair total {pair_total} vs {dealer_upcard}: expected {expected}, got {result}"
     
     def test_edge_cases(self):
         """Test boundary conditions"""

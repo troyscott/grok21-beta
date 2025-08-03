@@ -33,17 +33,18 @@ soft_table = {
     20: {2: 'S', 3: 'S', 4: 'S', 5: 'S', 6: 'S', 7: 'S', 8: 'S', 9: 'S', 10: 'S', 11: 'S'}   # A9
 }
 
+# Updated pairs table to use totals instead of individual card values
 pairs_table = {
-    2: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 2-2
-    3: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 3-3
-    4: {2: 'H', 3: 'H', 4: 'H', 5: 'P', 6: 'P', 7: 'H', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 4-4
-    5: {2: 'D', 3: 'D', 4: 'D', 5: 'D', 6: 'D', 7: 'D', 8: 'D', 9: 'D', 10: 'H', 11: 'H'},  # 5-5 (treat as 10)
-    6: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'H', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 6-6
-    7: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 7-7
-    8: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'P', 9: 'P', 10: 'P', 11: 'P'},  # 8-8
-    9: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'S', 8: 'P', 9: 'P', 10: 'S', 11: 'S'},  # 9-9
-    10: {2: 'S', 3: 'S', 4: 'S', 5: 'S', 6: 'S', 7: 'S', 8: 'S', 9: 'S', 10: 'S', 11: 'S'}, # 10-10
-    11: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'P', 9: 'P', 10: 'P', 11: 'P'}  # A-A
+    4: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 2-2 (total 4)
+    6: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 3-3 (total 6)
+    8: {2: 'H', 3: 'H', 4: 'H', 5: 'P', 6: 'P', 7: 'H', 8: 'H', 9: 'H', 10: 'H', 11: 'H'},  # 4-4 (total 8)
+    10: {2: 'D', 3: 'D', 4: 'D', 5: 'D', 6: 'D', 7: 'D', 8: 'D', 9: 'D', 10: 'H', 11: 'H'}, # 5-5 (total 10, treat as hard 10)
+    12: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'H', 8: 'H', 9: 'H', 10: 'H', 11: 'H'}, # 6-6 (total 12)
+    14: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'H', 9: 'H', 10: 'H', 11: 'H'}, # 7-7 (total 14)
+    16: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'P', 9: 'P', 10: 'P', 11: 'P'}, # 8-8 (total 16)
+    18: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'S', 8: 'P', 9: 'P', 10: 'S', 11: 'S'}, # 9-9 (total 18)
+    20: {2: 'S', 3: 'S', 4: 'S', 5: 'S', 6: 'S', 7: 'S', 8: 'S', 9: 'S', 10: 'S', 11: 'S'}, # 10-10 (total 20)
+    22: {2: 'P', 3: 'P', 4: 'P', 5: 'P', 6: 'P', 7: 'P', 8: 'P', 9: 'P', 10: 'P', 11: 'P'}  # A-A (total 22)
 }
 
 def get_action_text(action_code: str) -> str:
@@ -63,7 +64,7 @@ def get_action(hand_type: str, player_value: int, dealer_upcard: int) -> str:
     
     Args:
         hand_type: Type of hand - "hard", "soft", or "pair"
-        player_value: Player's hand total (2-21)
+        player_value: Player's hand total (all hand types now use totals)
         dealer_upcard: Dealer's visible card (2-11, where 11 represents Ace)
         
     Returns:
@@ -97,8 +98,10 @@ def get_action(hand_type: str, player_value: int, dealer_upcard: int) -> str:
         if player_value < 13 or player_value > 20:
             raise ValueError(f"Invalid soft hand value: {player_value}. Must be between 13 and 20")
     elif hand_type_lower == 'pair':
-        if player_value < 2 or player_value > 11:
-            raise ValueError(f"Invalid pair value: {player_value}. Must be between 2 and 11")
+        # Valid pair totals: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22
+        valid_pair_totals = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
+        if player_value not in valid_pair_totals:
+            raise ValueError(f"Invalid pair total: {player_value}. Valid pair totals: {valid_pair_totals}")
     
     # Validate dealer_upcard
     if dealer_upcard < 2 or dealer_upcard > 11:
