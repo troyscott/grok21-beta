@@ -3,6 +3,12 @@ Blackjack strategy helper - NOT a game, but a companion for online blackjack
 Uses fast heuristic tables + RAG/Grok for learning
 """
 
+# sqlite3 binary fix  for streamlit deploy issue
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+import sqlite3
+
 import streamlit as st
 from rag_chain import GrokRagChain
 from strategy_table import get_action
