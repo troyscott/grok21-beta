@@ -1,4 +1,15 @@
 import os
+
+import sys
+
+try:
+    import pysqlite3
+    sys.modules["sqlite3"] = pysqlite3
+    sys.modules["sqlite"] = pysqlite3
+except ImportError:
+    # pysqlite3 not available, use standard sqlite3
+    pass
+
 import json
 import logging
 from typing import Optional

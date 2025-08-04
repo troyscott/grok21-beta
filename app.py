@@ -1,3 +1,12 @@
+import sys
+
+try:
+    import pysqlite3
+    sys.modules["sqlite3"] = pysqlite3
+    sys.modules["sqlite"] = pysqlite3
+except ImportError:
+    # pysqlite3 not available, use standard sqlite3
+    pass
 import streamlit as st
 from rag_chain import GrokRagChain
 
