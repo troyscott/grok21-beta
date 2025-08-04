@@ -62,14 +62,23 @@ def ask_grok_question(question):
         return "Please enter a question about blackjack strategy."
         
     try:
-        rag_chain = GrokRagChain()
+        # Add logging to track what's happening
+        import logging
+        logging.info(f"Starting Grok question: {question[:50]}...")
         
-        # Use RAG path - provide question, no hand parameters
+        rag_chain = GrokRagChain()
+        logging.info("RAG chain initialized successfully")
+        
+        # Use RAG path - provide question, no hand parameters  
         response = rag_chain.get_response(query=question)
+        logging.info("Got response from RAG chain")
         
         return response
         
     except Exception as e:
+        # Log the full error details
+        import logging
+        logging.error(f"Error in ask_grok_question: {type(e).__name__}: {str(e)}")
         return f"Error asking Grok: {str(e)}"
 
 def handle_grok_interface():
