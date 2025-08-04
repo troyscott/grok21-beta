@@ -512,7 +512,6 @@ with tab1:
     # Strategy button
     if st.button("Get Strategy", type="primary"):
         try:
-            # No conversion needed - all hand types now use totals directly
             action_code = get_action(hand_type, player_total, dealer_upcard)
             action_info = get_action_display(action_code)
             
@@ -535,8 +534,38 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
             
+        except ValueError as e:
+            # Display error message inline without triggering a full refresh
+            st.markdown(f"""
+            <div class="action-result" style="
+                color: #ff6b6b; 
+                background-color: #2d1b1b;
+                border-color: #ff6b6b;
+            ">
+                <div class="action-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">
+                    ⚠️
+                </div>
+                <div class="action-text">
+                    {str(e)}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"Error: {e}")
+            # Handle any other unexpected errors
+            st.markdown(f"""
+            <div class="action-result" style="
+                color: #ff6b6b; 
+                background-color: #2d1b1b;
+                border-color: #ff6b6b;
+            ">
+                <div class="action-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">
+                    ❌
+                </div>
+                <div class="action-text">
+                    Error: {str(e)}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 with tab2:
     st.header("🤖 Ask Grok About Blackjack Strategy")

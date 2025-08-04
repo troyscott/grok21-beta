@@ -90,22 +90,22 @@ def get_action(hand_type: str, player_value: int, dealer_upcard: int) -> str:
     if hand_type_lower not in ['hard', 'soft', 'pair']:
         raise ValueError(f"Invalid hand type: {hand_type}. Must be 'hard', 'soft', or 'pair'")
     
+    # Validate dealer_upcard first
+    if dealer_upcard < 2 or dealer_upcard > 11:
+        raise ValueError(f"Invalid dealer upcard: {dealer_upcard}. Must be between 2 and 11 (where 11 represents Ace)")
+    
     # Validate player_value range based on hand type
     if hand_type_lower == 'hard':
         if player_value < 5 or player_value > 21:
-            raise ValueError(f"Invalid hard hand value: {player_value}. Must be between 5 and 21")
+            raise ValueError(f"Invalid hard hand total: {player_value}. Must be between 5 and 21")
     elif hand_type_lower == 'soft':
         if player_value < 13 or player_value > 20:
-            raise ValueError(f"Invalid soft hand value: {player_value}. Must be between 13 and 20")
+            raise ValueError(f"Invalid soft hand total: {player_value}. Must be between 13 and 20")
     elif hand_type_lower == 'pair':
         # Valid pair totals: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22
         valid_pair_totals = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
         if player_value not in valid_pair_totals:
-            raise ValueError(f"Invalid pair total: {player_value}. Valid pair totals: {valid_pair_totals}")
-    
-    # Validate dealer_upcard
-    if dealer_upcard < 2 or dealer_upcard > 11:
-        raise ValueError(f"Invalid dealer upcard: {dealer_upcard}. Must be between 2 and 11")
+            raise ValueError(f"Invalid pair total: {player_value}. Valid pair totals are: 4(2-2), 6(3-3), 8(4-4), 10(5-5), 12(6-6), 14(7-7), 16(8-8), 18(9-9), 20(10-10), 22(A-A)")
     
     # Get the appropriate table
     table = {
@@ -119,13 +119,19 @@ def get_action(hand_type: str, player_value: int, dealer_upcard: int) -> str:
         return 'H'  # Always hit very low hands
     
     if hand_type_lower == 'hard' and player_value > 21:
-        return 'BUST'  # Bust
+        raise ValueError(f"Hand total {player_value} is bust - no strategy needed")
     
     # Get actions from table
-    actions = table.get(player_value, {})
+    actions = table.get(player_value)
+    if actions is None:
+        raise ValueError(f"No strategy found for {hand_type} hand total {player_value}. Please check your input and try again.")
     
     # Normalize dealer upcard (Ace = 11)
     dealer_key = dealer_upcard if dealer_upcard <= 10 else 11
     
-    # Get action with fallback to hit
-    return actions.get(dealer_key, 'H')
+    # Get action from the specific dealer upcard
+    action = actions.get(dealer_key)
+    if action is None:
+        raise ValueError(f"No strategy found for {hand_type} {player_value} vs dealer {dealer_upcard}. Please check your input and try again.")
+    
+    return action
